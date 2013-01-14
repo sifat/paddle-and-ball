@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+        <title>Paddle and Ball</title>
+        <style type="text/css">
+            #playground{
+                position: relative;
+                width: 500px;
+                height: 500px;
+                border: 1px solid;
+                overflow: hidden;
+            }
+            #ball{
+                position: absolute;
+
+            }
+            #bat{
+                position: absolute;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            <p>Press space to start or pause game</p>
+            <p>Press arrow keys to move paddle</p>
+        </div>
+        <div id="playground">
+            <img src="ball.png" alt="ball" id="ball" />
+            <img src="bat.png" alt="bat" id="bat" style="top: 450px; left: 233px;"/>
+        </div>
+        <div id="info">
+            <p>Points:<span id="points"></span></p>
+            <p>Ball Cords: <span id="ballCords"></span></p>
+        </div>
+        <script type="text/javascript">
+            var ball=document.getElementById('ball');
+
+            var bat=document.getElementById('bat');
+
+            var playGround=document.getElementById('playground'); 
+
+            var playGroundObj={
+               width:playGround.offsetWidth,
+               height:playGround.offsetHeight
+            }
+            var ballObj={
+               x:0,
+               y:0,
+               moveBall:function(){
+                   this.x++;
+                   this.y++;
+                   if((playGroundObj.width-this.width)==this.x){
+                        this.x=-this.x;
+                    }
+                    if((playGroundObj.height-this.height)==this.y){
+                        //this.y=-this.y;
+                        game.stop();
+                    }
+
+                    ball.style.top=Math.abs(this.y)+'px';
+                    ball.style.left=Math.abs(this.x)+'px';
+
+                    //cmd='moveBall('+x+','+y+')';
+                    this.detectCollition();
+                    document.getElementById('ballCords').innerText='x:'+Math.abs(this.x)+' y:'+Math.abs(this.y);
+                    this.ballObjTimeout=setTimeout('ballObj.moveBall()', 8);
+               },
+               detectCollition:function(){
+                   btcl=batObj.currentLeft;
+                   blcl=Math.abs(this.x);
+                   btct=batObj.currentTop;
+                   blct=Math.abs(this.y);
+
+                   if((blcl> btcl-ballObj.width && blcl<btcl+batObj.width) && (btct==blct+this.height)){
+                       
+                       this.y=-this.y;
+                   }
+               }
+            }
+            var batObj={
+               moveBat:function(e){
+                   if((e.keyCode==39 || e.charCode==39) && (this.currentLeft < playGroundObj.width-this.width)){
+                       left=this.currentLeft+10;
+                       bat.style.left=left+'px';
+                   }
+                   if((e.keyCode==37 || e.charCode==37) && (this.currentLeft > 0)){
+                       left=this.currentLeft-10;
+                       bat.style.left=left+'px';
+                   }
+                   if((e.keyCode==38 || e.charCode==38) && (this.currentTop>=0)){
+                       topPos=this.currentTop-10;
+                       bat.style.top=topPos+'px';
+                   }
+                   if((e.keyCode==40 || e.charCode==40) && (this.currentTop<=(playGroundObj.height-this.height))){
+                       topPos=this.currentTop+10;
+                       bat.style.top=topPos+'px';
+                   }
+                   
+                   //alert(e.keyCode);
+               }
+            }
+            var game={
+               isStarted:false,
+               isPaused:false,
+               point:0,
+               speed:1,
+               start:function(){
+                   if(this.isStarted===false || this.isPaused===true){
+                       ballObj.moveBall();
+                       this.countPoint();
+                       this.isStarted=true
+                       return true;
+                   }
+                   return false;
+
+               },
+               pause: function(){
+                   if(this.isStarted===false){
+                       return false;
+                   }
+                   if(this.isPaused===false){
+                       clearTimeout(ballObj.ballObjTimeout);
+                       clearTimeout(this.pointTimeout);
+                       this.isPaused=true;
+                   }
+                   else{
+                       this.start();
+                       this.isPaused=false;
+                   }
+
+
+               },
+               stop:function(){
+                   clearTimeout(ballObj.ballObjTimeout);
+                   clearTimeout(this.pointTimeout);
+                   alert('game over,,, :(');
+                   window.location.reload();
+
+               },
+               restart: function(){
+
+               },
+               speed:function(){
+
+               },
+               countPoint:function(){
+                   this.point++;
+                   document.getElementById('points').innerText=this.point;
+                   this.pointTimeout=setTimeout('game.countPoint()',1000);
+               }
+            }
+
+            function gs(e){
+               ballObj.width=ball.offsetWidth;
+               ballObj.height=ball.offsetHeight;
+
+               batObj.width=bat.offsetWidth;
+               batObj.height=bat.offsetHeight;
+               batObj.currentLeft=parseInt(bat.style.left);
+               batObj.currentTop=parseInt(bat.style.top);
+
+              evntObj=window.event?event:e;
+               if(evntObj.keyCode==32 || evntObj.charCode==32){
+                   if(game.isStarted===false){
+                       game.start();
+                       return true;
+                   } else{
+                       game.pause();
+                       return true;
+                   }
+
+               } 
+               else if((evntObj.keyCode==39 || evntObj.charCode==39) ||
+                   (evntObj.keyCode==37 || evntObj.charCode==37) ||
+                   (evntObj.keyCode==38 || evntObj.charCode==38) ||
+                   (evntObj.keyCode==40 || evntObj.charCode==40)
+                ){
+                   if(game.isStarted===true){
+                       if(game.isPaused===false){
+                           batObj.moveBat(evntObj);
+                           return true;
+                       }
+                       
+                   }
+                   return false;
+
+               }
+               return false;
+            }
+            document.onkeydown=gs;
+        </script>
+    </body>
+</html>
