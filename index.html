@@ -174,7 +174,12 @@
                                 ( blX <= brX+width && 
                                 blX >= (brX+width - ballObj.speed ))) {
 
-                                ballObj.x = -ballObj.x;
+                                if (ballObj.x > 0) {
+                                    ballObj.x = ballObj.x - ballObj.speed;
+                                    ballObj.x = - ballObj.x
+                                } else {
+                                    ballObj.x = blX + ballObj.speed;
+                                }
 
                             }
                             
@@ -201,7 +206,7 @@
                 height: bat.offsetHeight,
                 //batOnMove: false,
                 loopTimes: 0,
-                batMoveEnds: 10,
+                batMoveEnds: 20,
                 
                 moveBat: function(e) {
                     this.currentLeft = parseInt(bat.style.left);
@@ -246,7 +251,7 @@
                 brickWidth: 59,
                 brickHeight: 39,
                 brickPositions: [],
-                life: 1,
+                life: 10,
                 level: 1,
                 
                 start: function() {
