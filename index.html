@@ -1,5 +1,5 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
         <title>Paddle and Ball</title>
@@ -13,182 +13,418 @@
             }
             #ball{
                 position: absolute;
-
+                width: 20px;
+                height: 20px;
+                background-color: #000;
+                border-radius: 10px;
             }
             #bat{
                 position: absolute;
+                background-color: #4ac47d;
+                width: 60px;
+                height: 5px;
             }
+            .bricks {
+                border: 1px solid;
+                position: absolute;
+                background-color: yellow;
+            }
+            #info {
+                margin: 0 0 0 50px;
+                position: absolute;
+                top: 0;
+                left: 500px;
+            }
+            #info p {
+                margin: 0;
+            }
+            #message {
+                display: none;
+            }
+
         </style>
     </head>
     <body>
+        <div id="playground">
+            <div id="ball"></div>
+            <div id="bat"></div>
+            <div id="message"></div>
+        </div>
+        <div id="info">
+            <p>Points:<span id="points"></span></p>
+            <p>Life:<span id="life"></span></p>
+            <p>Level:<span id="level"></span></p>
+            <p>Ball Cords: <span id="ballCords"></span></p>
+        </div>
         <div>
             <p>Press space to start or pause game</p>
             <p>Press arrow keys to move paddle</p>
         </div>
-        <div id="playground">
-            <img src="ball.png" alt="ball" id="ball" />
-            <img src="bat.png" alt="bat" id="bat" style="top: 450px; left: 233px;"/>
-        </div>
-        <div id="info">
-            <p>Points:<span id="points"></span></p>
-            <p>Ball Cords: <span id="ballCords"></span></p>
-        </div>
         <script type="text/javascript">
-            var ball=document.getElementById('ball');
-
-            var bat=document.getElementById('bat');
-
-            var playGround=document.getElementById('playground'); 
-
-            var playGroundObj={
-               width:playGround.offsetWidth,
-               height:playGround.offsetHeight
+            var ball = document.getElementById('ball');
+            var bat = document.getElementById('bat');
+            var playGround = document.getElementById('playground'); 
+            var messageBox = document.getElementById('message');
+            
+            window.animationFrame = window.requestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                window.webkitRequestAnimationFrame ||
+                window.oRequestAnimationFrame ||
+                window.msRequestAnimationFrame;
+            
+            window.cancelAnimFrame = window.cancelAnimationFrame ||
+                window.mozCancelAnimationFrame ||
+                window.webkitCancelAnimationFrame ||
+                window.oCancelAnimaitonFrame ||
+                window.msCancelAnimationFrame;
+            
+            var playGroundObj = {
+                width: playGround.offsetWidth,
+                height: playGround.offsetHeight
             }
-            var ballObj={
-               x:0,
-               y:0,
-               moveBall:function(){
-                   this.x++;
-                   this.y++;
-                   if((playGroundObj.width-this.width)==this.x){
-                        this.x=-this.x;
+            
+            var ballObj = {
+                x: 0,
+                y: 0,
+                prevCall: Date.now(),
+                speed: 4,
+                width: ball.offsetWidth,
+                height: ball.offsetHeight,
+               
+                moveBall: function() {
+                    
+                    ballObj.reqId = window.animationFrame(ballObj.moveBall);
+                    
+                    ballObj.x = ballObj.x+ballObj.speed;
+                    ballObj.y = ballObj.y+ballObj.speed;
+                    
+                    
+                    if ((playGroundObj.width-ballObj.width) <= ballObj.x) {
+                        ballObj.x = -ballObj.x;
                     }
-                    if((playGroundObj.height-this.height)==this.y){
-                        //this.y=-this.y;
-                        game.stop();
+                    
+                    if ((playGroundObj.height-ballObj.height) <= ballObj.y) {
+                        //ballObj.y = -ballObj.y;
+                        game.countLife();
+                    }
+                    
+                    ballObj.detectCollition();
+
+                    ball.style.top = Math.abs(ballObj.y)+'px';
+                    ball.style.left = Math.abs(ballObj.x)+'px';
+
+                    
+                    
+                    if(Date.now() - ballObj.prevCall >= 100) {
+                        ballObj.prevCall = Date.now();
+                        document.getElementById('ballCords').innerText='x: '+Math.abs(ballObj.y)+' '+' y: '+Math.abs(ballObj.x)+' ';
+                    }
+                    
+                    
+                    if ( typeof(ballObj.ev) != 'undefined' ) {
+                        batObj.moveBat(ballObj.ev);
+                        //delete(ballObj.ev);
+                    } 
+                    
+                    //batObj.moveBat(ballObj.ev);
+                    
+                    
+                    
+                },
+                
+                detectCollition: function() {
+                    //ball position
+                    blX = Math.abs(ballObj.x);
+                    blY = Math.abs(ballObj.y);
+                    //colision with bricks
+                    for (i = -1; i < game.brickPositions.length; i++) {
+                        //when i = -1 check for bat
+                        
+                        if (i == -1) {
+                            brX = batObj.currentLeft;
+                            brY = batObj.currentTop;
+                            width = batObj.width;
+                            height = batObj.height;
+                        } else {
+                            //brick posiiton
+                            brX = game.brickPositions[i][0];
+                            brY = game.brickPositions[i][1];
+                            width = game.brickWidth;
+                            height = game.brickHeight;
+                        }
+                        
+                        
+
+                        if ( (blX >= brX-ballObj.width && blX <= brX+width) && 
+                            (brY <= blY+ballObj.height && brY >= blY-height)) {
+                            
+                            if ( (brY+height >= blY && brY+height - ballObj.speed <= blY) ||
+                                (blY + ballObj.height >= brY && blY + ballObj.height <= brY + ballObj.speed)) {
+                                if ( ballObj.y > 0 ) {
+                                    ballObj.y = ballObj.y - ballObj.speed;
+                                    ballObj.y = -ballObj.y;
+                                } else {
+                                    ballObj.y = blY + ballObj.speed;                                
+                                }
+                            }
+
+                            
+
+                            if ( ( blX + ballObj.width >= brX && blX + ballObj.width <= brX + ballObj.speed ) || 
+                                ( blX <= brX+width && 
+                                blX >= (brX+width - ballObj.speed ))) {
+
+                                ballObj.x = -ballObj.x;
+
+                            }
+                            
+                            if (i >= 0) {
+                                game.brickPositions[i][0] = -999;
+                                game.brickPositions[i][1] = -999;
+                                playGround.removeChild(document.getElementById(i));
+                                game.countPoint();
+                                if (document.getElementsByClassName('bricks').length == 0) {
+                                    game.levelChange();
+                                }
+                                break;
+                            }
+                            
+                        }
+                    }
+                }
+    
+            }
+            
+            
+            var batObj = {
+                width: bat.offsetWidth,
+                height: bat.offsetHeight,
+                //batOnMove: false,
+                loopTimes: 0,
+                batMoveEnds: 10,
+                
+                moveBat: function(e) {
+                    this.currentLeft = parseInt(bat.style.left);
+                    this.currentTop = parseInt(bat.style.top);
+                    this.loopTimes++;
+                    if((e.keyCode == 39 || e.charCode==39) && (this.currentLeft < playGroundObj.width-this.width)) {
+                        left = this.currentLeft+ballObj.speed;
+                        bat.style.left = left+'px';
+                        //this.animation(false, this.currentLeft);
+                    }
+                    if((e.keyCode == 37 || e.charCode == 37) && (this.currentLeft > 0)) {
+                        left = this.currentLeft-ballObj.speed;
+                        bat.style.left = left+'px';
+                    }
+                    if((e.keyCode == 38 || e.charCode == 38) && (this.currentTop >= 0)) {
+                        topPos=this.currentTop-ballObj.speed;
+                        bat.style.top=topPos+'px';
+                    }
+                    if((e.keyCode == 40 || e.charCode == 40) && (this.currentTop <= (playGroundObj.height-this.height)) && 
+                        (this.currentTop+ballObj.speed <= playGroundObj.height-this.height)) {
+                        topPos = this.currentTop+ballObj.speed;
+                        bat.style.top = topPos+'px';
+                    }
+                    
+                    if (this.loopTimes > this.batMoveEnds) {
+                        this.loopTimes = 0;
+                        delete(ballObj.ev);
+                        return false;
+                    }
+                    
+                    //                    console.log(e.keyCode);
+                    return true;
+                } 
+            }
+            
+            var game = {
+                
+                isStarted:false,
+                isPaused:false,
+                point:0,
+                totalNoOfBricks: 6,
+                brickWidth: 59,
+                brickHeight: 39,
+                brickPositions: [],
+                life: 1,
+                level: 1,
+                
+                start: function() {
+                    if ((playGroundObj.height-ballObj.height) <= ballObj.y) {
+                        return false;
+                    }
+                    if(this.isStarted === false || this.isPaused === true) {
+                        ballObj.moveBall();
+                        //requestAnimationFrame(ballObj.moveBall());
+                        //this.countPoint();
+                        this.isStarted=true
+                        return true;
+                    }
+                    return false;
+
+                },
+                
+                pause: function() {
+                    if(this.isStarted === false) {
+                        return false;
+                    }
+                    
+                    if(this.isPaused === false) {
+                        window.cancelAnimFrame(ballObj.reqId);
+                        this.isPaused=true;
+                        document.getElementById('ballCords').innerText='x: '+Math.abs(ballObj.y)+' '+' y: '+Math.abs(ballObj.x)+' ';
+                    }
+                    
+                    else {
+                        if (this.start()) {
+                            this.isPaused = false;
+                        }
                     }
 
-                    ball.style.top=Math.abs(this.y)+'px';
-                    ball.style.left=Math.abs(this.x)+'px';
 
-                    //cmd='moveBall('+x+','+y+')';
-                    this.detectCollition();
-                    document.getElementById('ballCords').innerText='x:'+Math.abs(this.x)+' y:'+Math.abs(this.y);
-                    this.ballObjTimeout=setTimeout('ballObj.moveBall()', 8);
-               },
-               detectCollition:function(){
-                   btcl=batObj.currentLeft;
-                   blcl=Math.abs(this.x);
-                   btct=batObj.currentTop;
-                   blct=Math.abs(this.y);
+                },
+                stop: function() {
+                    
+                    window.cancelAnimFrame(ballObj.reqId);
+                    
+                    playGround.innerHTML = '<h1>Game Over</h1>';
+                    //window.location.reload();
+                    setTimeout(function(){
+                        window.location.reload();
+                    }, 2000);
+                    document.getElementById('ballCords').innerText='x: '+Math.abs(ballObj.y)+' '+' y: '+Math.abs(ballObj.x)+' ';
 
-                   if((blcl> btcl-ballObj.width && blcl<btcl+batObj.width) && (btct==blct+this.height)){
+                },
+                
+                restart: function() {
+
+                },
+                
+                countLife: function() {
+                    this.life --;
+                    document.getElementById('life').innerText = this.life;
+                    game.pause();
+                    
+                    setTimeout(function() {
+                        ballObj.x = Math.round(parseInt(bat.style.left) + (batObj.width / 2) - (ballObj.width / 2));
+                        ballObj.y = parseInt(bat.style.top) - ballObj.height;
+                        
+                        ball.style.top = Math.abs(ballObj.y)+'px';
+                        ball.style.left = Math.abs(ballObj.x)+'px';
+                    }, 1000);
+                    
+                    
+                    
+                    if (this.life == 0) {
+                        this.stop();
+                        return;
+                    }
+                },
+                
+                countPoint: function() {
+                    this.point = this.point + (this.level * 100);
+                    document.getElementById('points').innerText = this.point;
+                    return true;
+                },
+                levelChange: function() {
+                    this.level++;
+                    ballObj.speed++;
+                    game.pause();
+                    messageBox.innerHTML = '<h1>Level ' + this.level + '</h1>';
+                    messageBox.style.display = 'block';
+                    setTimeout(function() {
+                        messageBox.style.display = 'none';
+                        game.draw();
+                    }, 1000);
+                    
+                },
+                
+                
+                draw: function () {
+                    batLeft = (playGroundObj.width / 2) - (batObj.width / 2);
+                    batTop = (playGroundObj.height - batObj.height) - Math.round(playGroundObj.height * 10 / 100);
+                    batObj.currentLeft = batLeft;
+                    batObj.currentTop = batTop;
+                    
+                    ballLeft = Math.round(batLeft +(batObj.width / 2) - (ballObj.width / 2));
+                    ballTop = batTop - ballObj.height;
+                    ballObj.x = ballLeft;
+                    ballObj.y = -ballTop;
+                    
+                    bricksMaximumX = playGroundObj.width - Math.round(playGroundObj.width * 10 / 100);
+                    bricksMinimumX = Math.round(playGroundObj.width * 10 / 100);
+                    bricksMinimumY = ballObj.height;
+                    
+                    for(i = 0, j = 0, k = 0, totalBricks = this.totalNoOfBricks*this.level; i < totalBricks; i++, j++) {
+                        brick = document.createElement('div');
+                        brick.setAttribute('class', 'bricks');
+                        brick.setAttribute('id', i);
+                        brick.style.width = this.brickWidth+'px';
+                        brick.style.height = this.brickHeight+'px';
+                        
+                        brickLeft = bricksMinimumX + j*this.brickWidth;
+                        if (brickLeft+this.brickWidth >= bricksMaximumX) {
+                            j = 0;
+                            k++;
+                            brickLeft = bricksMinimumX;
+                        }
+                        
+                        brickTop = bricksMinimumY + k*this.brickHeight;
+                        
+                        this.brickPositions[i] = [brickLeft, brickTop];
+                        brick.style.top = brickTop+'px';
+                        brick.style.left = brickLeft+'px';
+                        playGround.appendChild(brick);
+                    }
+                    
+                    bat.style.left = batLeft+'px';
+                    bat.style.top = batTop+'px';
+                    ball.style.left = ballLeft+'px';
+                    ball.style.top = ballTop+'px';
+                    
+                    document.getElementById('life').innerText = this.life;
+                    document.getElementById('points').innerText = this.point;
+                    document.getElementById('level').innerText = this.level;
+                    document.getElementById('ballCords').innerText='x: '+Math.abs(ballObj.y)+' '+' y: '+Math.abs(ballObj.x)+' ';
+                }
+            }
+
+            function gs(e) {
+                evntObj = window.event ? event : e;
+                if(evntObj.keyCode==32 || evntObj.charCode==32) {
+                    if(game.isStarted===false) {
+                        game.start();
+                        return true;
+                    } else {
+                        game.pause();
+                        return true;
+                    }
+
+                } 
+                else if((evntObj.keyCode==39 || evntObj.charCode==39) ||
+                    (evntObj.keyCode==37 || evntObj.charCode==37) ||
+                    (evntObj.keyCode==38 || evntObj.charCode==38) ||
+                    (evntObj.keyCode==40 || evntObj.charCode==40)
+            ) {
+                    if(game.isStarted===true) {
+                        if(game.isPaused===false) {
+                            //batObj.moveBat(evntObj);
+                            ballObj.ev = evntObj;
+                            return true;
+                        }
                        
-                       this.y=-this.y;
-                   }
-               }
+                    }
+                    return false;
+
+                }
+                return true;
             }
-            var batObj={
-               moveBat:function(e){
-                   if((e.keyCode==39 || e.charCode==39) && (this.currentLeft < playGroundObj.width-this.width)){
-                       left=this.currentLeft+10;
-                       bat.style.left=left+'px';
-                   }
-                   if((e.keyCode==37 || e.charCode==37) && (this.currentLeft > 0)){
-                       left=this.currentLeft-10;
-                       bat.style.left=left+'px';
-                   }
-                   if((e.keyCode==38 || e.charCode==38) && (this.currentTop>=0)){
-                       topPos=this.currentTop-10;
-                       bat.style.top=topPos+'px';
-                   }
-                   if((e.keyCode==40 || e.charCode==40) && (this.currentTop<=(playGroundObj.height-this.height))){
-                       topPos=this.currentTop+10;
-                       bat.style.top=topPos+'px';
-                   }
-                   
-                   //alert(e.keyCode);
-               }
-            }
-            var game={
-               isStarted:false,
-               isPaused:false,
-               point:0,
-               speed:1,
-               start:function(){
-                   if(this.isStarted===false || this.isPaused===true){
-                       ballObj.moveBall();
-                       this.countPoint();
-                       this.isStarted=true
-                       return true;
-                   }
-                   return false;
-
-               },
-               pause: function(){
-                   if(this.isStarted===false){
-                       return false;
-                   }
-                   if(this.isPaused===false){
-                       clearTimeout(ballObj.ballObjTimeout);
-                       clearTimeout(this.pointTimeout);
-                       this.isPaused=true;
-                   }
-                   else{
-                       this.start();
-                       this.isPaused=false;
-                   }
-
-
-               },
-               stop:function(){
-                   clearTimeout(ballObj.ballObjTimeout);
-                   clearTimeout(this.pointTimeout);
-                   alert('game over,,, :(');
-                   window.location.reload();
-
-               },
-               restart: function(){
-
-               },
-               speed:function(){
-
-               },
-               countPoint:function(){
-                   this.point++;
-                   document.getElementById('points').innerText=this.point;
-                   this.pointTimeout=setTimeout('game.countPoint()',1000);
-               }
-            }
-
-            function gs(e){
-               ballObj.width=ball.offsetWidth;
-               ballObj.height=ball.offsetHeight;
-
-               batObj.width=bat.offsetWidth;
-               batObj.height=bat.offsetHeight;
-               batObj.currentLeft=parseInt(bat.style.left);
-               batObj.currentTop=parseInt(bat.style.top);
-
-              evntObj=window.event?event:e;
-               if(evntObj.keyCode==32 || evntObj.charCode==32){
-                   if(game.isStarted===false){
-                       game.start();
-                       return true;
-                   } else{
-                       game.pause();
-                       return true;
-                   }
-
-               } 
-               else if((evntObj.keyCode==39 || evntObj.charCode==39) ||
-                   (evntObj.keyCode==37 || evntObj.charCode==37) ||
-                   (evntObj.keyCode==38 || evntObj.charCode==38) ||
-                   (evntObj.keyCode==40 || evntObj.charCode==40)
-                ){
-                   if(game.isStarted===true){
-                       if(game.isPaused===false){
-                           batObj.moveBat(evntObj);
-                           return true;
-                       }
-                       
-                   }
-                   return false;
-
-               }
-               return false;
-            }
+            
             document.onkeydown=gs;
+            window.onload = function() {
+                game.draw();
+            }
+            
         </script>
     </body>
 </html>
