@@ -1,4 +1,4 @@
 paddle-and-ball
 ===============
 
-simple html javascript game
+simple dom based Javascript game
